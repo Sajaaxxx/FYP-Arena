@@ -130,7 +130,19 @@
   .confirm .stamp b{font-size:20px;}
   .confirm p{color:var(--cream-dim);font-size:14px;margin:0;}
 
-  .org-list{margin-top:1rem;}
+  .org-header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+  .refresh-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+    background:transparent;border:1px solid var(--teal);color:var(--teal);
+    padding:7px 12px;border-radius:6px;cursor:pointer;font-weight:600;
+    display:flex;align-items:center;gap:6px;
+  }
+  .refresh-btn:hover{background:var(--teal);color:#0d201e;}
+  .refresh-btn svg{width:13px;height:13px;transition:transform .4s;}
+  .refresh-btn.spinning svg{transform:rotate(360deg);}
+  .last-updated{font-size:11px;color:var(--cream-dim);font-family:'IBM Plex Mono',monospace;}
+
+  .org-list{margin-top:0;}
   .org-role{border:1px solid var(--line);border-radius:10px;padding:1rem 1.1rem;margin-bottom:14px;background:var(--bg-raised);}
   .org-role-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;}
   .org-role-head h3{font-size:15px;margin:0;font-weight:600;}
@@ -162,13 +174,38 @@
   </div>
 
   <div id="view-organizer" style="display:none;">
+    <div class="org-header-row">
+      <span class="last-updated" id="last-updated"></span>
+      <button class="refresh-btn" id="refresh-org">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
+        Refresh
+      </button>
+    </div>
     <div class="org-list" id="org-list"><p class="loading">Loading list…</p></div>
   </div>
 </div>
 
 <div id="modal-root"></div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAvCIU0bCRLr1mswj_SgYjIfNoT_fTAVjI",
+  authDomain: "fyp-arena.firebaseapp.com",
+  projectId: "fyp-arena",
+  storageBucket: "fyp-arena.firebasestorage.app",
+  messagingSenderId: "439806600089",
+  appId: "1:439806600089:web:8ad929ed118b64c347e908"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const signupsCol = collection(db, "signups");
+
 const ROLES = [
   { id:'reg', name:'Registration & equipment', desc:'Check-in desk plus handing out badges, kits and gear.' },
   { id:'food', name:'Refreshments & lunch', desc:'Keep snacks, drinks and lunch running on time.' },
@@ -183,26 +220,35 @@ const ICONS = {
   compere: '<svg class="role-icon" viewBox="0 0 24 24" fill="none" stroke="#E8A33D" stroke-width="1.6"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6"/></svg>'
 };
 
-const STORAGE_KEY = 'crew-signups-v1';
-
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-async function loadSignups(){
-  try{
-    const res = await window.storage.get(STORAGE_KEY, true);
-    return res && res.value ? JSON.parse(res.value) : [];
-  }catch(e){
-    return [];
-  }
-}
-
-async function saveSignups(list){
-  await window.storage.set(STORAGE_KEY, JSON.stringify(list), true);
-}
-
 let allSignups = [];
+let firestoreReady = false;
+
+// Real-time listener: fires immediately with current data, then again on every change.
+const signupsQuery = query(signupsCol, orderBy("ts", "asc"));
+onSnapshot(signupsQuery, (snapshot) => {
+  allSignups = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  firestoreReady = true;
+  renderCards();
+  const orgView = document.getElementById('view-organizer');
+  if(orgView && orgView.style.display !== 'none'){
+    renderOrganizer();
+  }
+}, (err) => {
+  console.error("Firestore listen failed:", err);
+});
+
+async function addSignup(roleId, name, whatsapp){
+  await addDoc(signupsCol, {
+    role: roleId,
+    name,
+    whatsapp,
+    ts: serverTimestamp()
+  });
+}
 
 function countFor(roleId){
   return allSignups.filter(s => s.role === roleId).length;
@@ -263,15 +309,8 @@ function openForm(roleId){
     submitBtn.disabled = true;
     submitBtn.textContent = 'Adding…';
     try{
-      allSignups = await loadSignups();
-      allSignups.push({
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
-        role: roleId,
-        name, whatsapp: wa,
-        ts: new Date().toISOString()
-      });
-      await saveSignups(allSignups);
-      renderCards();
+      await addSignup(roleId, name, wa);
+      // allSignups + renderCards() will update automatically via the onSnapshot listener above.
       showConfirm(role);
     }catch(e){
       submitBtn.disabled = false;
@@ -306,10 +345,22 @@ function closeModal(){
   document.getElementById('modal-root').innerHTML = '';
 }
 
-async function renderOrganizer(){
+function updateTimestamp(){
+  const el = document.getElementById('last-updated');
+  if(!el) return;
+  const now = new Date();
+  el.textContent = 'Updated ' + now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+
+function renderOrganizer(showSpinner){
   const el = document.getElementById('org-list');
-  el.innerHTML = '<p class="loading">Loading list…</p>';
-  allSignups = await loadSignups();
+  const refreshBtn = document.getElementById('refresh-org');
+  if(showSpinner && refreshBtn) refreshBtn.classList.add('spinning');
+  if(!firestoreReady){
+    el.innerHTML = '<p class="loading">Loading list…</p>';
+    return;
+  }
+
   el.innerHTML = ROLES.map(r=>{
     const people = allSignups.filter(s=>s.role===r.id);
     const body = people.length
@@ -340,6 +391,10 @@ async function renderOrganizer(){
       }catch(e){}
     });
   });
+  updateTimestamp();
+  if(refreshBtn){
+    setTimeout(()=>refreshBtn.classList.remove('spinning'), 400);
+  }
 }
 
 document.getElementById('tab-signup').addEventListener('click', ()=>{
@@ -353,13 +408,11 @@ document.getElementById('tab-organizer').addEventListener('click', ()=>{
   document.getElementById('tab-signup').classList.remove('active');
   document.getElementById('view-organizer').style.display = 'block';
   document.getElementById('view-signup').style.display = 'none';
-  renderOrganizer();
+  renderOrganizer(false);
 });
+document.getElementById('refresh-org').addEventListener('click', ()=>renderOrganizer(true));
 
-(async function init(){
-  allSignups = await loadSignups();
-  renderCards();
-})();
+renderCards();
 </script>
 </body>
 </html>
