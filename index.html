@@ -239,6 +239,10 @@ onSnapshot(signupsQuery, (snapshot) => {
   }
 }, (err) => {
   console.error("Firestore listen failed:", err);
+  const el = document.getElementById('org-list');
+  if(el){
+    el.innerHTML = `<p class="empty" style="color:var(--coral);">Couldn't load the list from Firebase.<br>Error: ${escapeHtml(err.code || '')} — ${escapeHtml(err.message || String(err))}</p>`;
+  }
 });
 
 async function addSignup(roleId, name, whatsapp){
@@ -315,7 +319,7 @@ function openForm(roleId){
     }catch(e){
       submitBtn.disabled = false;
       submitBtn.textContent = 'Add me to the list';
-      document.getElementById('f-err').textContent = "Couldn't save. Check your connection and try again.";
+      document.getElementById('f-err').textContent = "Couldn't save — " + (e.code || '') + " " + (e.message || String(e));
       document.getElementById('f-err').style.display = 'block';
     }
   });
