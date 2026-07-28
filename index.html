@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crew Call — Event Sign-Up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #1B2430;
+    --bg-raised: #232E3D;
+    --cream: #F2EFE9;
+    --cream-dim: #B8BFC9;
+    --amber: #E8A33D;
+    --amber-dark: #6b4e1f;
+    --teal: #3A8F86;
+    --teal-dark: #1c4440;
+    --coral: #E0665B;
+    --line: rgba(242,239,233,0.14);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--cream);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:2.5rem 1.25rem 4rem;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--amber);margin:0 0 .5rem;
+  }
+  h1{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(2.4rem,7vw,3.6rem);
+    letter-spacing:.02em;
+    margin:0 0 .6rem;
+    line-height:1.02;
+  }
+  .sub{color:var(--cream-dim);font-size:15px;line-height:1.6;margin:0 0 2rem;max-width:520px;}
+  .tabs{display:flex;gap:8px;margin-bottom:2rem;}
+  .tab-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+    background:transparent;border:1px solid var(--line);color:var(--cream-dim);
+    padding:8px 14px;border-radius:20px;cursor:pointer;transition:all .15s;
+  }
+  .tab-btn.active{background:var(--amber);border-color:var(--amber);color:#2b1c05;font-weight:600;}
+  .tab-btn:hover:not(.active){border-color:var(--cream-dim);color:var(--cream);}
+
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media (max-width:560px){.cards{grid-template-columns:1fr;}}
+
+  .ticket{
+    position:relative;
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:1.3rem 1.3rem 1.5rem;
+    display:flex;flex-direction:column;gap:.6rem;
+    overflow:visible;
+  }
+  .ticket::before{
+    content:"";position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+    width:16px;height:16px;border-radius:50%;background:var(--bg);
+  }
+  .ticket-perf{
+    border-top:1px dashed rgba(242,239,233,0.25);
+    margin-top:.4rem;padding-top:.9rem;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .role-icon{width:30px;height:30px;flex-shrink:0;}
+  .role-head{display:flex;align-items:center;gap:10px;}
+  .role-name{font-size:17px;font-weight:600;margin:0;}
+  .role-desc{font-size:13px;color:var(--cream-dim);line-height:1.5;margin:0;}
+  .stamp{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;
+    border:1.5px solid var(--coral);color:var(--coral);
+    border-radius:50%;width:52px;height:52px;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    transform:rotate(-8deg);flex-direction:column;line-height:1.1;
+    opacity:.9;
+  }
+  .stamp b{font-size:15px;font-family:'Bebas Neue',sans-serif;letter-spacing:.02em;}
+  .claim-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.05em;text-transform:uppercase;
+    background:transparent;border:1px solid var(--amber);color:var(--amber);
+    padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:600;
+    transition:all .15s;
+  }
+  .claim-btn:hover{background:var(--amber);color:#2b1c05;}
+
+  .panel-backdrop{
+    position:fixed;inset:0;background:rgba(10,13,18,0.7);
+    display:flex;align-items:flex-end;justify-content:center;
+    z-index:50;
+  }
+  @media (min-width:640px){.panel-backdrop{align-items:center;}}
+  .panel{
+    background:var(--bg-raised);border:1px solid var(--line);
+    border-radius:14px 14px 0 0;padding:1.6rem 1.4rem 2rem;
+    width:100%;max-width:440px;
+  }
+  @media (min-width:640px){.panel{border-radius:14px;}}
+  .panel-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin:0 0 4px;}
+  .panel h2{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;margin:0 0 1.1rem;letter-spacing:.02em;}
+  label{font-size:12px;color:var(--cream-dim);display:block;margin:0 0 6px;}
+  input[type=text], input[type=tel]{
+    width:100%;background:var(--bg);border:1px solid var(--line);color:var(--cream);
+    padding:10px 12px;border-radius:7px;font-size:15px;margin-bottom:1rem;font-family:'Inter',sans-serif;
+  }
+  input:focus{outline:2px solid var(--amber);outline-offset:1px;}
+  .panel-actions{display:flex;gap:10px;margin-top:.4rem;}
+  .btn-primary{
+    flex:1;background:var(--amber);color:#2b1c05;border:none;font-weight:600;
+    padding:11px;border-radius:7px;cursor:pointer;font-size:14px;
+  }
+  .btn-ghost{
+    background:transparent;border:1px solid var(--line);color:var(--cream-dim);
+    padding:11px 16px;border-radius:7px;cursor:pointer;font-size:14px;
+  }
+  .err{color:var(--coral);font-size:12px;margin:-6px 0 10px;display:none;}
+
+  .confirm{
+    display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:1rem 0 .5rem;
+  }
+  .confirm .stamp{width:70px;height:70px;font-size:12px;transform:rotate(-6deg);}
+  .confirm .stamp b{font-size:20px;}
+  .confirm p{color:var(--cream-dim);font-size:14px;margin:0;}
+
+  .org-list{margin-top:1rem;}
+  .org-role{border:1px solid var(--line);border-radius:10px;padding:1rem 1.1rem;margin-bottom:14px;background:var(--bg-raised);}
+  .org-role-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;}
+  .org-role-head h3{font-size:15px;margin:0;font-weight:600;}
+  .copy-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;background:transparent;border:1px solid var(--line);
+    color:var(--cream-dim);padding:5px 9px;border-radius:6px;cursor:pointer;
+  }
+  .copy-btn:hover{border-color:var(--teal);color:var(--teal);}
+  .signee{display:flex;justify-content:space-between;font-size:13.5px;padding:6px 0;border-top:1px solid var(--line);}
+  .signee:first-of-type{border-top:none;}
+  .signee .num{font-family:'IBM Plex Mono',monospace;color:var(--cream-dim);}
+  .empty{color:var(--cream-dim);font-size:13px;font-style:italic;}
+  .loading{color:var(--cream-dim);font-size:13px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Crew call</p>
+  <h1>Get your spot on the team</h1>
+  <p class="sub">Pick a role, drop your name and WhatsApp number, and you're on the list. No sign-in needed.</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-signup">Sign up</button>
+    <button class="tab-btn" id="tab-organizer">Organizer view</button>
+  </div>
+
+  <div id="view-signup">
+    <div class="cards" id="cards"></div>
+  </div>
+
+  <div id="view-organizer" style="display:none;">
+    <div class="org-list" id="org-list"><p class="loading">Loading list…</p></div>
+  </div>
+</div>
+
+<div id="modal-root"></div>
+
+<script>
+const ROLES = [
+  { id:'reg', name:'Registration & equipment', desc:'Check-in desk plus handing out badges, kits and gear.' },
+  { id:'food', name:'Refreshments & lunch', desc:'Keep snacks, drinks and lunch running on time.' },
+  { id:'design', name:'Graphic design', desc:'Banners, slides, social posts and print materials.' },
+  { id:'compere', name:'Compere / MC', desc:'Host the stage, run the flow, keep energy up.' }
+];
+
+const ICONS = {
+  reg: '<svg class="role-icon" viewBox="0 0 24 24" fill="none" stroke="#E8A33D" stroke-width="1.6"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/><path d="M8 14h3M8 17h5"/></svg>',
+  food: '<svg class="role-icon" viewBox="0 0 24 24" fill="none" stroke="#E8A33D" stroke-width="1.6"><path d="M6 3v7a3 3 0 0 0 6 0V3M9 3v7M6 3v3M18 3v18M18 3c-2 0-3 1.5-3 4s1 4 3 4"/></svg>',
+  design: '<svg class="role-icon" viewBox="0 0 24 24" fill="none" stroke="#E8A33D" stroke-width="1.6"><path d="M4 20l4-1 11-11a2 2 0 0 0-3-3L5 16l-1 4z"/><path d="M13 6l3 3"/></svg>',
+  compere: '<svg class="role-icon" viewBox="0 0 24 24" fill="none" stroke="#E8A33D" stroke-width="1.6"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6"/></svg>'
+};
+
+const STORAGE_KEY = 'crew-signups-v1';
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function loadSignups(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, true);
+    return res && res.value ? JSON.parse(res.value) : [];
+  }catch(e){
+    return [];
+  }
+}
+
+async function saveSignups(list){
+  await window.storage.set(STORAGE_KEY, JSON.stringify(list), true);
+}
+
+let allSignups = [];
+
+function countFor(roleId){
+  return allSignups.filter(s => s.role === roleId).length;
+}
+
+function renderCards(){
+  const el = document.getElementById('cards');
+  el.innerHTML = ROLES.map(r => `
+    <div class="ticket">
+      <div class="role-head">
+        ${ICONS[r.id]}
+        <p class="role-name">${escapeHtml(r.name)}</p>
+      </div>
+      <p class="role-desc">${escapeHtml(r.desc)}</p>
+      <div class="ticket-perf">
+        <div class="stamp"><b>${countFor(r.id)}</b>signed up</div>
+        <button class="claim-btn" data-role="${r.id}">I'm in</button>
+      </div>
+    </div>
+  `).join('');
+  el.querySelectorAll('.claim-btn').forEach(btn=>{
+    btn.addEventListener('click', () => openForm(btn.dataset.role));
+  });
+}
+
+function openForm(roleId){
+  const role = ROLES.find(r => r.id === roleId);
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `
+    <div class="panel-backdrop" id="backdrop">
+      <div class="panel">
+        <p class="panel-eyebrow">${escapeHtml(role.name)}</p>
+        <h2>Add your details</h2>
+        <label for="f-name">Name</label>
+        <input type="text" id="f-name" placeholder="Your full name" autocomplete="off">
+        <label for="f-whatsapp">WhatsApp number</label>
+        <input type="tel" id="f-whatsapp" placeholder="e.g. +94 77 123 4567" autocomplete="off">
+        <p class="err" id="f-err">Enter your name and WhatsApp number to continue.</p>
+        <div class="panel-actions">
+          <button class="btn-ghost" id="f-cancel">Cancel</button>
+          <button class="btn-primary" id="f-submit">Add me to the list</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('f-cancel').addEventListener('click', closeModal);
+  document.getElementById('backdrop').addEventListener('click', (e)=>{
+    if(e.target.id === 'backdrop') closeModal();
+  });
+  document.getElementById('f-submit').addEventListener('click', async ()=>{
+    const name = document.getElementById('f-name').value.trim();
+    const wa = document.getElementById('f-whatsapp').value.trim();
+    if(!name || !wa){
+      document.getElementById('f-err').style.display = 'block';
+      return;
+    }
+    const submitBtn = document.getElementById('f-submit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Adding…';
+    try{
+      allSignups = await loadSignups();
+      allSignups.push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+        role: roleId,
+        name, whatsapp: wa,
+        ts: new Date().toISOString()
+      });
+      await saveSignups(allSignups);
+      renderCards();
+      showConfirm(role);
+    }catch(e){
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Add me to the list';
+      document.getElementById('f-err').textContent = "Couldn't save. Check your connection and try again.";
+      document.getElementById('f-err').style.display = 'block';
+    }
+  });
+}
+
+function showConfirm(role){
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `
+    <div class="panel-backdrop" id="backdrop2">
+      <div class="panel">
+        <div class="confirm">
+          <div class="stamp"><b>✓</b>added</div>
+          <h2 style="margin-top:6px;">You're on the crew</h2>
+          <p>You're down for <strong style="color:var(--cream);">${escapeHtml(role.name)}</strong>. See you at the event.</p>
+          <button class="btn-primary" style="margin-top:8px;width:auto;padding:10px 20px;" id="f-done">Done</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('f-done').addEventListener('click', closeModal);
+  document.getElementById('backdrop2').addEventListener('click', (e)=>{
+    if(e.target.id === 'backdrop2') closeModal();
+  });
+}
+
+function closeModal(){
+  document.getElementById('modal-root').innerHTML = '';
+}
+
+async function renderOrganizer(){
+  const el = document.getElementById('org-list');
+  el.innerHTML = '<p class="loading">Loading list…</p>';
+  allSignups = await loadSignups();
+  el.innerHTML = ROLES.map(r=>{
+    const people = allSignups.filter(s=>s.role===r.id);
+    const body = people.length
+      ? people.map((p,i)=>`<div class="signee"><span>${escapeHtml(p.name)}</span><span class="num">${escapeHtml(p.whatsapp)}</span></div>`).join('')
+      : '<p class="empty">No one signed up yet.</p>';
+    return `
+      <div class="org-role">
+        <div class="org-role-head">
+          <h3>${escapeHtml(r.name)} · ${people.length}</h3>
+          <button class="copy-btn" data-role="${r.id}">Copy list</button>
+        </div>
+        ${body}
+      </div>
+    `;
+  }).join('');
+  el.querySelectorAll('.copy-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const roleId = btn.dataset.role;
+      const role = ROLES.find(r=>r.id===roleId);
+      const people = allSignups.filter(s=>s.role===roleId);
+      const text = `${role.name}\n` + (people.length
+        ? people.map(p=>`${p.name} — ${p.whatsapp}`).join('\n')
+        : '(no one yet)');
+      try{
+        await navigator.clipboard.writeText(text);
+        btn.textContent = 'Copied';
+        setTimeout(()=>{ btn.textContent = 'Copy list'; }, 1500);
+      }catch(e){}
+    });
+  });
+}
+
+document.getElementById('tab-signup').addEventListener('click', ()=>{
+  document.getElementById('tab-signup').classList.add('active');
+  document.getElementById('tab-organizer').classList.remove('active');
+  document.getElementById('view-signup').style.display = 'block';
+  document.getElementById('view-organizer').style.display = 'none';
+});
+document.getElementById('tab-organizer').addEventListener('click', ()=>{
+  document.getElementById('tab-organizer').classList.add('active');
+  document.getElementById('tab-signup').classList.remove('active');
+  document.getElementById('view-organizer').style.display = 'block';
+  document.getElementById('view-signup').style.display = 'none';
+  renderOrganizer();
+});
+
+(async function init(){
+  allSignups = await loadSignups();
+  renderCards();
+})();
+</script>
+</body>
+</html>
